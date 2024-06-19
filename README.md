@@ -1,4 +1,4 @@
-# Project Assignment: Online Imtiaz Mart API Using Event-Driven Microservices Architecture
+# Project Assignment: On-line Mart API Using Event-Driven Microservices Architecture
 
 ## Project Overview
 
