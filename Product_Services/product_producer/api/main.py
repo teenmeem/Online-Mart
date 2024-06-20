@@ -1,9 +1,8 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-# from api.lifespan_manager import lifespan
+from api.kafka_services import create_topic
 from api.routers.product import router as product_router
 import logging
-from api.kafka_utils import create_topic
 
 logging.basicConfig(level=logging.INFO)  # Set logging level
 logger = logging.getLogger(__name__)

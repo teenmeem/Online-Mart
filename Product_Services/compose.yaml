@@ -1,4 +1,3 @@
-
 name: online-mart
 
 services:
@@ -8,22 +7,23 @@ services:
     restart: always
     container_name: Product_DB_Container
     environment:
-        - POSTGRES_USER=db_user
-        - POSTGRES_PASSWORD=db_password
-        - POSTGRES_DB=slat_db
+      POSTGRES_USER_FILE: /run/secrets/db_user
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      POSTGRES_DB_FILE: /run/secrets/database
     secrets:
       - db_user
       - db_password
+      - database
     ports:
-        - '5434:5432'
+      - '5434:5432'
     volumes:
-        - product_db:/var/lib/postgresql/data
-    profiles: ["product"]
+      - products_db:/var/lib/postgresql/data
+#    profiles: ["product"]
 
   product_producer_svc:
     build:
-#      context: ./product_producer
-      dockerfile: Dockerfile.prod
+      context: ./product_producer
+      dockerfile: Dockerfile.dev
     volumes:
       - ./product_producer:/app  # Sync local development directory with the container
     depends_on:
@@ -43,7 +43,7 @@ services:
         - product_database_svc
     ports:
       - "8003:8000"  # Expose container port 8000 to host port 8000
-    profiles: ["product--"]
+    profiles: ["product"]
 
   broker:
     image: apache/kafka:3.7.0
@@ -84,11 +84,13 @@ secrets:
     file: db_user.txt
   db_password:
     file: db_password.txt
+  database:
+    file: database.txt
 
 volumes:
   user_data:
     driver: local
-  product_db:
+  products_db:
     driver: local
 
 networks:

@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+message Proto_Product {
+  int32 id = 1;  // ID field for lookup
+  string name = 2;
+  string description = 3;
+  string category = 4;
+  string brand = 5;
+  float price = 6;
+  string currency = 7;
+  int32 stock = 8;
+  string location = 9;
+  int32 user_id = 10;
+}
+
+message Proto_Product_Delete {
+  int32 id = 1;  // ID of the product to delete
+}

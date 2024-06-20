@@ -4,17 +4,16 @@ FROM python:3.12
 LABEL maintainer="teenmeem@gmail.com"
 
 # Copy the current directory contents into the container at /code
-COPY product_producer /app/
-COPY shared_data /shared_data/
+COPY . /app/
 
 # Set the working directory in the container
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
+#RUN apt-get update && apt-get install -y \
 #    build-essential \
 #    libpq-dev \
-    protobuf-compiler \
-    && rm -rf /var/lib/apt/lists/*
+    # protobuf-compiler \
+    # && rm -rf /var/lib/apt/lists/*
 
 # Install Poetry
 RUN pip install poetry
