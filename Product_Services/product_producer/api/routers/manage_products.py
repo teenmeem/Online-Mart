@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import Annotated
 from aiokafka import AIOKafkaProducer
-from common_files.product_pb2 import Proto_Product_Delete
+from common_files.product_pb2 import Proto_Product, Proto_Product_Delete
 from common_files.product_model import Product, ProductCreate, ProductUpdate, ProductResponse
 from common_files import settings
 from common_files.database import get_session
@@ -19,10 +19,21 @@ async def create_product(
     item: ProductCreate,
     producer: Annotated[AIOKafkaProducer, Depends(kafka_producer)]
 ):
+    """
+    A function that creates a product by converting the input item to a protobuf message, serializing it, and sending it to a Kafka topic. 
+    Parameters:
+        - item: ProductCreate object containing information about the product to be created.
+        - producer: AIOKafkaProducer object used to send the serialized product to the Kafka topic.
+    Returns:
+        - Returns the created product.
+    Raises:
+        - Raises an HTTPException with status code 500 if an error occurs during the product creation process.
+    """
     try:
         # Convert item to protobuf message
         logger.info(f"Converting dictionary to protobuf: {item}")
-        product_proto = dict_to_protobuf(item.model_dump())
+
+        product_proto: Proto_Product = dict_to_protobuf(item.model_dump())
         logger.info(f"Creating product: {product_proto}")
 
         # Serialize protobuf message
@@ -45,20 +56,36 @@ async def update_product(
     item: ProductUpdate,
     producer: Annotated[AIOKafkaProducer, Depends(kafka_producer)]
 ):
+    """
+    Updates a product with the given product ID by converting the input item to a protobuf message,
+    serializing it, and sending it to a Kafka topic. The function takes in the following parameters:
+
+    - `product_id` (int): The ID of the product to be updated.
+    - `item` (ProductUpdate): The updated information for the product.
+    - `producer` (Annotated[AIOKafkaProducer, Depends(kafka_producer)]): The Kafka producer used to
+      send the serialized product to the Kafka topic.
+
+    Returns:
+    - `ProductResponse`: The updated product.
+
+    Raises:
+    - `HTTPException` with status code 404 if the product with the given ID is not found.
+    - `HTTPException` with status code 500 if an error occurs during the update process.
+    """
     with get_session() as session:
-        product = session.get(Product, product_id)
+        product: Product = session.get(Product, product_id)
         if not product:
             raise HTTPException(status_code=404, detail="Product not found")
 
         try:
             # convert sqlmodel to dict
-            item_dict = item.model_dump(exclude_unset=True)
+            item_dict: dict = item.model_dump(exclude_unset=True)
             item_dict["id"] = product_id
 
             # Convert item to protobuf message
             logger.info(
                 f"Converted dictionary to protobuf:{item_dict}")
-            product_proto = dict_to_protobuf(item_dict)
+            product_proto: Proto_Product = dict_to_protobuf(item_dict)
             logger.info(f"Updating product: {product_proto}")
 
             # Serialize protobuf message
@@ -87,14 +114,29 @@ async def delete_product(
     product_id: int,
     producer: Annotated[AIOKafkaProducer, Depends(kafka_producer)]
 ):
+    """
+    Deletes a product based on the provided product ID by converting the ID to a protobuf message,
+    serializing it, and sending it to a Kafka topic for deletion. The function takes in the following parameters:
+
+    - `product_id` (int): The ID of the product to be deleted.
+    - `producer` (Annotated[AIOKafkaProducer, Depends(kafka_producer)]): The Kafka producer used for sending the deletion message.
+
+    Returns:
+    - A dictionary containing a message confirming the deletion request.
+
+    Raises:
+    - HTTPException with status code 404 if the product with the given ID is not found.
+    - HTTPException with status code 500 if an error occurs during the deletion process.
+    """
     with get_session() as session:
-        product = session.get(Product, product_id)
+        product: Product = session.get(Product, product_id)
         if not product:
             raise HTTPException(status_code=404, detail="Product not found")
 
         try:
             # Convert product ID to protobuf message
-            item_proto = Proto_Product_Delete(id=product_id)
+            item_proto: Proto_Product_Delete = Proto_Product_Delete(
+                id=product_id)
             logger.info(f"Deleting product with ID: {product_id}")
 
             # Serialize protobuf message

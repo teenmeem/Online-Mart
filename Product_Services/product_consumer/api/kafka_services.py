@@ -27,7 +27,7 @@ async def consume_insert_update_messages():
 
                     logger.info(f"Received item:  {item_proto}")
                     # Convert item to dictionary
-                    item = protobuf_to_dict(item_proto)
+                    item: dict = protobuf_to_dict(item_proto)
                     # Call the service to handle product deletion
 
                     if item_proto.id:  # Check for Updation
@@ -60,6 +60,7 @@ async def consume_insert_update_messages():
 
 
 async def consume_delete_messages():
+    """	Asynchronously consumes delete messages from Kafka topic and handles product deletion."""
 
     consumer = AIOKafkaConsumer(
         settings.KAFKA_PRODUCT_TOPIC_DELETE,
@@ -74,7 +75,7 @@ async def consume_delete_messages():
                 item_proto = Proto_Product_Delete()
                 item_proto.ParseFromString(msg.value)
 
-                product_id = item_proto.id
+                product_id: int = item_proto.id
                 logger.info(
                     f"Received delete request for product ID: {product_id}")
 

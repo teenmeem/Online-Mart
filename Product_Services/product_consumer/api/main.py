@@ -5,7 +5,6 @@ from api.kafka_services import consume_insert_update_messages, consume_delete_me
 import asyncio
 import logging
 
-
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -13,7 +12,18 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifespan context manager for creating database tables and starting Kafka consumer."""
+    """
+    An asynchronous context manager that sets up the database tables and starts the Kafka consumer tasks.
+
+    Args:
+        app (FastAPI): The FastAPI application.
+
+    Yields:
+        None: Yields nothing.
+
+    Raises:
+        Exception: If an error occurs during the setup.
+    """
     try:
         logger.info('Starting database setup...')
         create_db_and_tables()
@@ -22,6 +32,7 @@ async def lifespan(app: FastAPI):
         # Start Kafka consumer tasks
         consumer_task_insert_update = asyncio.create_task(
             consume_insert_update_messages())
+
         consumer_task_delete = asyncio.create_task(consume_delete_messages())
 
         yield
@@ -44,7 +55,3 @@ app = FastAPI(
     title="PostgreSQL DB Service",
     version='1.0.0'
 )
-
-# if __name__ == "__main__":
-#     import uvicorn
-#     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -6,13 +6,13 @@ class Product(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True, index=True)
     name: str = Field(index=True)
     description: str | None = None
-    category: str
+    category: str = Field(index=True)
     brand: str
     price: float
     currency: str
     stock: int
-    location: str
-    user_id: int
+    location: str = Field(index=True)
+    user_id: int = Field(index=True)
     created_at: datetime | None = Field(default_factory=datetime.now)
     updated_at: datetime | None = Field(default_factory=datetime.now, sa_column_kwargs={
         "onupdate": datetime.now}
