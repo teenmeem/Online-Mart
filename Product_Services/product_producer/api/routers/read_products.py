@@ -24,7 +24,7 @@ def read_products():
         return products
 
 
-@router.get("/{product_id}", response_model=ProductResponse)
+@router.get("/item/{product_id}", response_model=ProductResponse)
 def read_product_by_id(product_id: int):
     """
     Retrieves a product from the database by its ID.
