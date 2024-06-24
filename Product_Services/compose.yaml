@@ -18,7 +18,7 @@ services:
       - '5434:5432'
     volumes:
       - products_db:/var/lib/postgresql/data
-#    profiles: ["product"]
+    profiles: ["product--"]
 
   product_producer_svc:
     build:
