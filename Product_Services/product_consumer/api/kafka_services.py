@@ -3,21 +3,41 @@ from common_files.product_pb2 import Proto_Product, Proto_Product_Delete
 from common_files import settings
 from api.protobuf_to_dict import protobuf_to_dict
 from api.db_operations import insert_product_into_db, update_product_in_db, delete_product_from_db
+import asyncio
 import logging
 
 logger = logging.getLogger(__name__)
 
+MAX_RETRIES = 5
+RETRY_INTERVAL = 10
+
 
 async def consume_insert_update_messages():
     """Asynchronously consume orders from Kafka topic and store them in the database."""
-    consumer = AIOKafkaConsumer(
-        settings.KAFKA_PRODUCT_TOPIC,
-        bootstrap_servers=settings.BOOTSTRAP_SERVER,
-        group_id=settings.KAFKA_PRODUCT_CONSUMER_GROUP_ID
-    )
+    retries = 0
 
-    await consumer.start()
-    logger.info("Kafka consumer started")
+    while retries < MAX_RETRIES:
+        try:
+            consumer = AIOKafkaConsumer(
+                settings.KAFKA_PRODUCT_TOPIC,
+                bootstrap_servers=settings.BOOTSTRAP_SERVER,
+                group_id=settings.KAFKA_PRODUCT_CONSUMER_GROUP_ID
+            )
+
+            await consumer.start()
+            logger.info("Consumer started successfully.")
+            break
+        except Exception as e:
+            retries += 1
+            logger.error(f"Error starting consumer, retry {
+                         retries}/{MAX_RETRIES}: {e}")
+            if retries < MAX_RETRIES:
+                await asyncio.sleep(RETRY_INTERVAL)
+            else:
+                logger.error("Max retries reached. Could not start consumer.")
+                return
+# ---------------
+
     try:
         async for msg in consumer:
             if msg.value:
@@ -61,14 +81,30 @@ async def consume_insert_update_messages():
 
 async def consume_delete_messages():
     """	Asynchronously consumes delete messages from Kafka topic and handles product deletion."""
+    retries = 0
 
-    consumer = AIOKafkaConsumer(
-        settings.KAFKA_PRODUCT_TOPIC_DELETE,
-        bootstrap_servers=settings.BOOTSTRAP_SERVER,
-        group_id=settings.KAFKA_PRODUCT_CONSUMER_DELETE_GROUP_ID
-    )
+    while retries < MAX_RETRIES:
+        try:
+            consumer = AIOKafkaConsumer(
+                settings.KAFKA_PRODUCT_TOPIC_DELETE,
+                bootstrap_servers=settings.BOOTSTRAP_SERVER,
+                group_id=settings.KAFKA_PRODUCT_CONSUMER_DELETE_GROUP_ID
+            )
 
-    await consumer.start()
+            await consumer.start()
+            logger.info("Consumer started successfully.")
+            break
+        except Exception as e:
+            retries += 1
+            logger.error(f"Error starting consumer, retry {
+                         retries}/{MAX_RETRIES}: {e}")
+            if retries < MAX_RETRIES:
+                await asyncio.sleep(RETRY_INTERVAL)
+            else:
+                logger.error("Max retries reached. Could not start consumer.")
+                return
+# ---------------
+
     try:
         async for msg in consumer:
             try:
