@@ -40,7 +40,7 @@ services:
       - ./product_consumer:/app  # Sync local development directory with the container
     depends_on:
         - product_producer_svc
-        - product_database_svc
+#        - product_database_svc
     ports:
       - "8003:8000"  # Expose container port 8000 to host port 8000
     profiles: ["product"]
