@@ -10,11 +10,11 @@ connection_string = str(settings.DATABASE_URL).replace(
 
 # recycle connections after 5 minutes
 # to correspond with the compute scale down
-# engine = create_engine(
-#    connection_string, connect_args={"sslmode": "require"}, pool_recycle=300)
-
 engine = create_engine(
-    connection_string, connect_args={}, pool_recycle=300)
+    connection_string, connect_args={"sslmode": "require"}, pool_recycle=300)
+
+# engine = create_engine(
+#   connection_string, connect_args={}, pool_recycle=300)
 
 # Also change in .env file
 
