@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlmodel import select, func
 from typing import Annotated
 from aiokafka import AIOKafkaProducer
 from common_files.product_pb2 import Proto_Product, Proto_Product_Delete
@@ -20,16 +21,28 @@ async def create_product(
     producer: Annotated[AIOKafkaProducer, Depends(kafka_producer)]
 ):
     """
-    A function that creates a product by converting the input item to a protobuf message, serializing it, and sending it to a Kafka topic. 
-    Parameters:
-        - item: ProductCreate object containing information about the product to be created.
-        - producer: AIOKafkaProducer object used to send the serialized product to the Kafka topic.
-    Returns:
-        - Returns the created product.
+    Create a new product by sending a message to Kafka.
+
+    Args:
+        item (ProductCreate): The product to be created.
+        producer (AIOKafkaProducer): The Kafka producer used to send the message.
+
     Raises:
-        - Raises an HTTPException with status code 500 if an error occurs during the product creation process.
+        HTTPException: If a product with the same product code already exists.
+        HTTPException: If an error occurs during the creation process.
+
+    Returns:
+        ProductCreate: The created product.
     """
+    with get_session() as session:
+        product: Product = session.exec(select(Product).where(
+            func.upper(Product.prod_code) == item.prod_code.upper())).one()
+    if product:
+        raise HTTPException(
+            status_code=409, detail="Product already exists")
+
     try:
+
         # Convert item to protobuf message
         logger.info(f"Converting dictionary to protobuf: {item}")
 
@@ -41,7 +54,7 @@ async def create_product(
 
         # Send message to Kafka
         await producer.send_and_wait(settings.KAFKA_PRODUCT_TOPIC, serialized_item)
-        logger.info(f"Product '{item.name}' '{item.description}' sent to Kafka topic '{
+        logger.info(f"Product '{item}' sent to Kafka topic '{
                     settings.KAFKA_PRODUCT_TOPIC}'")
 
         return item

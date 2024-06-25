@@ -2,15 +2,16 @@ syntax = "proto3";
 
 message Proto_Product {
   int32 id = 1;  // ID field for lookup
-  string name = 2;
-  string description = 3;
-  string category = 4;
-  string brand = 5;
-  float price = 6;
-  string currency = 7;
-  int32 stock = 8;
-  string location = 9;
-  int32 user_id = 10;
+  string prod_code = 2;  // Unique code for product
+  string name = 3;  // Name of the product
+  string description = 4;  // Description of the product
+  string category = 5;  // Category of the product
+  string brand = 6;  // Brand of the product
+  float price = 7;  // Price of the product
+  string currency = 8;  // Currency of the product
+  int32 stock = 9;  // Stock of the product
+  string location = 10;  // Location of the product
+  int32 user_id = 11;  // User ID of the product
 }
 
 message Proto_Product_Delete {

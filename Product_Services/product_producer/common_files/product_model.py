@@ -4,6 +4,7 @@ from datetime import datetime
 
 class Product(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
+    prod_code: str = Field(unique=True, index=True)
     name: str = Field(index=True)
     description: str | None = None
     category: str = Field(index=True)
@@ -21,6 +22,7 @@ class Product(SQLModel, table=True):
 
 # Model examples
 example_input_product = {
+    "prod_code": "ABC123",
     "name": "Car",
     "description": "Honda Accord",
     "category": "Vehicle",
@@ -34,6 +36,7 @@ example_input_product = {
 
 
 class ProductCreate(SQLModel):
+    prod_code: str
     name: str
     description: str | None = None
     category: str
@@ -49,6 +52,7 @@ class ProductCreate(SQLModel):
 
 
 class ProductUpdate(SQLModel):
+    prod_code: str | None = None
     name: str | None = None
     description: str | None = None
     category: str | None = None
@@ -62,6 +66,7 @@ class ProductUpdate(SQLModel):
 
 class ProductResponse(SQLModel):
     id: int
+    prod_code: str | None = None
     name: str | None = None
     description: str | None = None
     category: str | None = None
