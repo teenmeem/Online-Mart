@@ -36,7 +36,7 @@ async def create_product(
     """
     with get_session() as session:
         product: Product = session.exec(select(Product).where(
-            func.upper(Product.prod_code) == item.prod_code.upper())).one()
+            func.upper(Product.prod_code) == item.prod_code.upper())).first()
     if product:
         raise HTTPException(
             status_code=409, detail="Product already exists")
