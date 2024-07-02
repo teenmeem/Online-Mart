@@ -36,7 +36,7 @@ async def create_product(
     """
     with get_session() as session:
         product: Product = session.exec(select(Product).where(
-            func.upper(Product.prod_code) == item.prod_code.upper())).first()
+            func.upper(Product.prod_code) == item.prod_code.upper())).one_or_none()
     if product:
         raise HTTPException(
             status_code=409, detail="Product already exists")
@@ -122,7 +122,7 @@ async def update_product(
                 status_code=500, detail="Failed to update product")
 
 
-@ router.delete('/delete_product/{product_id}')
+@router.delete('/delete_product/{product_id}')
 async def delete_product(
     product_id: int,
     producer: Annotated[AIOKafkaProducer, Depends(kafka_producer)]
