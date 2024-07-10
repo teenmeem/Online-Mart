@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+message Proto_Inventory {
+  int32 id=1;
+  string  transaction_type=2;
+  int32 quantity=3;
+ // string transaction_date=4;
+  string source_destination=4;
+  string remarks=5;
+  int32 user_id=6;
+}
+message Proto_Inventory_Delete {
+  int32 id = 1;  // ID of the product to delete
+}

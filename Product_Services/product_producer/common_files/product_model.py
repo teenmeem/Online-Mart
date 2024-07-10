@@ -13,6 +13,7 @@ class Product(SQLModel, table=True):
     currency: str
     stock: int
     location: str
+#    sku: str | None = Field(unique=True, max_length=255)
     user_id: int = Field(index=True)
     created_at: datetime | None = Field(default_factory=datetime.now)
     updated_at: datetime | None = Field(default_factory=datetime.now, sa_column_kwargs={
