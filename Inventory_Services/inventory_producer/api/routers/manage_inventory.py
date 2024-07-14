@@ -1,14 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import Annotated
 from aiokafka import AIOKafkaProducer
-# from common_files.inventory_trans_pb2 import Proto_Inventory, Proto_Inventory_Delete
 from common_files.inventory_trans_model import InventoryTransaction, InventoryTransCreate, InventoryTransUpdate, InventoryTransResponse
 from common_files import settings
 from common_files.database import get_session
 from api.kafka_services import kafka_producer
 from api.dict_to_json import custom_json_serializer
 import logging
-import json
 
 logger = logging.getLogger(__name__)
 
@@ -59,49 +57,51 @@ async def create(
             status_code=500, detail="Failed to create transaction")
 
 
-@router.patch('/update/{product_id}', response_model=InventoryTransResponse)
+@router.patch('/update/{inventory_id}', response_model=InventoryTransResponse)
 async def update(
-    product_id: int,
-    item: InventoryTransUpdate,
+    inventory_id: int,
+    inventory: InventoryTransUpdate,
     producer: Annotated[AIOKafkaProducer, Depends(kafka_producer)]
 ):
 
     with get_session() as session:
-        product: InventoryTransaction = session.get(
-            InventoryTransaction, product_id)
-        if not product:
-            raise HTTPException(status_code=404, detail="Product not found")
+        trans: InventoryTransaction = session.get(
+            InventoryTransaction, inventory_id)
+        if not trans:
+            raise HTTPException(
+                status_code=404, detail="Transaction not found")
 
         try:
             # convert sqlmodel to dict
-            item_dict: dict = item.model_dump(exclude_unset=True)
-            item_dict["id"] = product_id
+            item_dict: dict = inventory.model_dump(exclude_unset=True)
+            item_dict["id"] = inventory_id
 
-            # Convert item to protobuf message
+            # Convert item to json serialized message
             logger.info(
-                f"Converted dictionary to protobuf:{item_dict}")
-            inventory_proto: Proto_Inventory = dict_to_protobuf(item_dict)
-            logger.info(f"Updating product: {inventory_proto}")
+                f"Converting dictionary to json serialized: {inventory}")
 
-            # Serialize protobuf message
-            serialized_item = inventory_proto.SerializeToString()
+            item_dict = inventory.model_dump()
+            logger.info(f"Updating transaction: {item_dict}")
+
+            # Serialize json message
+            serialized_item = custom_json_serializer(item_dict)
 
             # Send message to Kafka
             await producer.send_and_wait(settings.KAFKA_INVENTORY_TOPIC, serialized_item)
-            logger.info(f"Product '{item}' with ID '{product_id}' sent to Kafka topic '{
+            logger.info(f"Transaction '{inventory}' with ID '{inventory_id}' sent to Kafka topic '{
                         settings.KAFKA_INVENTORY_TOPIC}'")
 
             # Update product values, only for response purpose
             for key, value in item_dict.items():
                 # set new values according to key
-                setattr(product, key, value)
+                setattr(inventory, key, value)
 
-            return product
+            return inventory
         except Exception as e:
-            logger.error(f"Failed to update product with ID '{
-                         product_id}': {e}")
+            logger.error(f"Failed to update transaction with ID '{
+                inventory_id}': {e}")
             raise HTTPException(
-                status_code=500, detail="Failed to update product")
+                status_code=500, detail="Failed to update transaction")
 
 
 @router.delete('/delete/{inventory_id}')
@@ -117,13 +117,11 @@ async def delete(
                 status_code=404, detail="Transaction not found")
 
         try:
-            # Convert product ID to protobuf message
-            # item_proto: Proto_Inventory_Delete = Proto_Inventory_Delete(id=product_id)
-            item_dict = {id: inventory_id}
-            logger.info(f"Deleting transaction with ID: {inventory_id}")
+            # Convert product ID to json message
+            item_dict: dict = {"id": inventory_id}
+            logger.info(f"Deleting transaction with ID: {item_dict.get('id')}")
 
-            # Serialize protobuf message
-            # serialized_item = item_proto.SerializeToString()
+            # Serialize json message
             serialized_item = custom_json_serializer(item_dict)
             # Send message to Kafka
             await producer.send_and_wait(settings.KAFKA_INVENTORY_TOPIC_DELETE, serialized_item)

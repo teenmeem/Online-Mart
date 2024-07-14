@@ -14,31 +14,32 @@ async def insert_into_db(transaction: InventoryTransCreate):
         with Session(engine) as session:
             session.add(trans)
             session.commit()
-
-            logger.info(f"Transaction '{trans}' inserted into the database")
+            logger.info(
+                f"Transaction '{trans}' inserted into the database")
             return {"ok": True}
+
     except Exception as e:
         logger.error(f"Failed to create product: {e}")
 
 
-async def update_in_db_nused(id: int, product: InventoryTransUpdate):
+async def update_into_db_nused(id: int, transaction: InventoryTransUpdate):
     try:
         with Session(engine) as session:
             item: InventoryTransaction = session.get(InventoryTransaction, id)
             if not item:
                 raise HTTPException(
-                    status_code=404, detail="Product not found")
+                    status_code=404, detail="Transaction not found")
 
-            for key, value in product.items():  # product received dict object just ignore red line
+            for key, value in transaction.items():  # transaction received dict object just ignore red line
                 # set new values according to key
                 setattr(item, key, value)
             session.commit()
 
-            logger.info(f"Product with ID '{
+            logger.info(f"Transaction with ID '{
                         item.id}' updated from the database")
             return {"ok": True}
     except Exception as e:
-        logger.error(f"Failed to update product: {e}")
+        logger.error(f"Failed to update transaction: {e}")
 
 
 async def delete_from_db(trans_id: int):

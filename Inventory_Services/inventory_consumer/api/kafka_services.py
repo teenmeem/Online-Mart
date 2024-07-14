@@ -1,7 +1,7 @@
 from aiokafka import AIOKafkaConsumer
 from common_files import settings
 from api.json_to_dict import custom_json_deserializer
-from api.db_operations import insert_product_into_db, update_product_in_db, delete_product_from_db
+from api.db_operations import insert_into_db, update_into_db_nused, delete_from_db
 from typing import Any
 import asyncio
 import logging
@@ -17,37 +17,31 @@ async def consume_insert_update_messages():
         async for msg in consumer:
             if msg.value:
                 try:
-                    # item_proto = Proto_Product()
-                    # item_proto.ParseFromString(msg.value)
-
-                    # logger.info(                        f"Received item:  {item_proto}")
-                    # Convert item to dictionary
-                    # item: dict = protobuf_to_dict(item_proto)
                     # Deserialize back to original format
                     deserialized_data = custom_json_deserializer(
                         msg.value.decode('utf-8'))
-                    print(f"Deserialized: {deserialized_data}")
-                    # Call the service to handle product deletion
+                    logger.info(f"Received message with Deserialized: {
+                                deserialized_data}")
 
-                    if deserialized_data.id:  # Check for Updation
-                        product_id = deserialized_data.id
+                    trans_id = deserialized_data.get("id")
+                    if trans_id:  # Check for Updation
                         logger.info(
-                            f"Received update request for product ID: {
-                                product_id}"
+                            f"Received update request for transaction ID: {
+                                trans_id}"
                         )
                         try:
-                            await update_product_in_db(product_id, deserialized_data)
+                            await update_into_db_nused(trans_id, deserialized_data)
                         except Exception as e:
-                            logger.error(f"Failed to update product: {e}")
+                            logger.error(f"Failed to update transaction: {e}")
 
                     else:
                         logger.info(
-                            f"Received insert request of product : {deserialized_data}")
+                            f"Received insert request of transaction : {deserialized_data}")
 
                         try:
-                            await insert_product_into_db(deserialized_data)
+                            await insert_into_db(deserialized_data)
                         except Exception as e:
-                            logger.error(f"Failed to insert product: {e}")
+                            logger.error(f"Failed to insert transaction: {e}")
 
                 except KeyError as e:
                     logger.error(f"Missing expected key in message: {e}")
@@ -66,16 +60,18 @@ async def consume_delete_messages():
     try:
         async for msg in consumer:
             try:
-                item_proto = Proto_Product_Delete()
-                item_proto.ParseFromString(msg.value)
 
-                product_id: int = item_proto.id
+                deserialized_data = custom_json_deserializer(
+                    msg.value.decode('utf-8'))
+                logger.info(f"Received message with Deserialized: {
+                            deserialized_data}")
+                trans_id = deserialized_data.get("id")
+
                 logger.info(
-                    f"Received delete request for product ID: {product_id}")
+                    f"Received delete request for transaction ID: {trans_id}")
 
-                # Call the service to handle product deletion
                 try:
-                    await delete_product_from_db(product_id)
+                    await delete_from_db(trans_id)
                 except Exception as e:
                     logger.error(f"Failed to delete product: {e}")
 
@@ -83,7 +79,6 @@ async def consume_delete_messages():
                 logger.error(f"Failed to process message: {e}")
     finally:
         await consumer.stop()
-# ---------------
 
 
 async def consumer_start(topic: str, group_id: str):
