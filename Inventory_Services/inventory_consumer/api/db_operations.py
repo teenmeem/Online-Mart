@@ -1,4 +1,4 @@
-from sqlmodel import Session
+from sqlmodel import Session, text
 from fastapi import HTTPException
 from common_files.database import engine
 from common_files.inventory_trans_model import InventoryTransaction, InventoryTransCreate, InventoryTransUpdate
@@ -16,6 +16,13 @@ async def insert_into_db(transaction: InventoryTransCreate):
             session.commit()
             logger.info(
                 f"Transaction '{trans}' inserted into the database")
+            # trans_id = trans.id
+            # trans_qty = trans.quantity
+            # trans_product = trans.product_id
+            # trans_user = trans.user_id
+            # update_statement = "UPDATE inventorytransaction SET quantity = trans_qty \
+            # WHERE id = trans_id AND product_id = trans_product AND user_id = trans_user;"
+            # session.exec(text(update_statement))
             return {"ok": True}
 
     except Exception as e:

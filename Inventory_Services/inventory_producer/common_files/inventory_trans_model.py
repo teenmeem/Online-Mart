@@ -9,6 +9,7 @@ class InventoryTransaction(SQLModel, table=True):
     product_id: int
     transaction_type: str
     quantity: int
+    unit_price: float
     transaction_date: datetime = Field(default_factory=datetime.now)
     source_destination: str | None  # Supplier/Customer
     remarks: str | None
@@ -24,6 +25,7 @@ example_input_inventory_trans = {
     "product_id": 1,
     "transaction_type": "IN",
     "quantity": 5,
+    "unit_price": 100.00,
     "transaction_date": datetime.now(),
     "source_destination": "Supplier",
     "remarks": "Received from supplier",
@@ -35,6 +37,7 @@ class InventoryTransCreate(SQLModel):
     product_id: int
     transaction_type: str
     quantity: int
+    unit_price: float
     transaction_date: datetime = Field(default_factory=datetime.now)
     source_destination: str | None  # Supplier/Customer
     remarks: str | None
@@ -47,6 +50,7 @@ class InventoryTransCreate(SQLModel):
 class InventoryTransUpdate(SQLModel):
     transaction_type: str | None
     quantity: int | None
+    unit_price: float | None
     transaction_date: datetime | None
     source_destination: str | None
     remarks: str | None
@@ -57,6 +61,7 @@ class InventoryTransResponse(SQLModel):
     id: int
     transaction_type: str | None
     quantity: int | None
+    unit_price: float | None
     transaction_date: datetime | None
     source_destination: str | None
     remarks: str | None

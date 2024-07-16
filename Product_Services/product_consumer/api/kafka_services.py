@@ -1,11 +1,13 @@
+import logging
+import asyncio
 from aiokafka import AIOKafkaConsumer
 from common_files.product_pb2 import Proto_Product, Proto_Product_Delete
 from common_files import settings
+from common_files.json_custom_serialization import custom_json_deserializer
 from api.protobuf_to_dict import protobuf_to_dict
-from api.db_operations import insert_product_into_db, update_product_in_db, delete_product_from_db
+from api.db_operations import\
+    insert_product_into_db, update_product_in_db, delete_product_from_db, update_product_bal_in_db
 
-import asyncio
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -25,10 +27,10 @@ async def consume_insert_update_messages():
                         f"Received item:  {item_proto}")
                     # Convert item to dictionary
                     item: dict = protobuf_to_dict(item_proto)
-                    # Call the service to handle product deletion
 
-                    if item_proto.id:  # Check for Updation
-                        product_id = item_proto.id
+                    # Call the service to handle product deletion
+                    product_id = item_proto.id
+                    if product_id:  # Check for Updation
                         logger.info(
                             f"Received update request for product ID: {
                                 product_id}"
@@ -111,3 +113,38 @@ async def consumer_start(topic: str, group_id: str):
             else:
                 logger.error("Max retries reached. Could not start consumer.")
                 return
+
+
+async def consume_inventory_update_messages():
+    """Asynchronously consume inventory from Kafka topic and store them in the database."""
+    consumer = await consumer_start(
+        settings.KAFKA_INVENTORY_TOPIC, settings.KAFKA_INVENTORY_CONSUMER_GROUP_ID)
+    try:
+        async for msg in consumer:
+            if msg.value:
+                try:
+                    # Deserialize back to original format
+                    deserialized_data = custom_json_deserializer(
+                        msg.value.decode('utf-8'))
+                    logger.info(f"Received message with Deserialized: {
+                                deserialized_data}")
+
+                    product_id = deserialized_data.get("product_id")
+
+                    if product_id:  # Check for Updation
+                        logger.info(
+                            f"Received update request for transaction ID: {
+                                product_id}"
+                        )
+                        try:
+                            await update_product_bal_in_db(product_id, deserialized_data)
+                        except Exception as e:
+                            logger.error(f"Failed to update product: {e}")
+
+                except KeyError as e:
+                    logger.error(f"Missing expected key in message: {e}")
+            else:
+                logger.warning("Received message with no value")
+    finally:
+        await consumer.stop()
+        logger.info("Kafka consumer stopped")

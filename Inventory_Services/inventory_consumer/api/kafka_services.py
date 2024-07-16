@@ -1,6 +1,6 @@
 from aiokafka import AIOKafkaConsumer
 from common_files import settings
-from api.json_to_dict import custom_json_deserializer
+from common_files.json_custom_serialization import custom_json_deserializer
 from api.db_operations import insert_into_db, update_into_db_nused, delete_from_db
 from typing import Any
 import asyncio

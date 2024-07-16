@@ -95,3 +95,36 @@ async def delete_product_from_db(item_id: int):
             return {"ok": True}
     except Exception as e:
         logger.error(f"Failed to delete product: {e}")
+
+
+async def update_product_bal_in_db(id: int, deserialized_data: dict):
+    try:
+        with Session(engine) as session:
+            item: Product = session.get(Product, id)
+            if not item:
+                raise HTTPException(
+                    status_code=404, detail="Product not found")
+
+            transaction_type = deserialized_data.get("transaction_type")
+            quantity = deserialized_data.get("quantity")
+            unit_price = deserialized_data.get("unit_price")
+
+            if transaction_type and quantity is not None:
+                if transaction_type == 'IN':
+                    item.stock += quantity
+                elif transaction_type == 'OUT':
+                    item.stock -= quantity
+                else:
+                    raise ValueError(f"Unknown transaction_type: {
+                                     transaction_type}")
+
+            if unit_price is not None:
+                item.price = unit_price
+
+            session.commit()
+            logger.info(f"Product with ID '{
+                        item.id}' updated from the database")
+            return {"ok": True}
+    except Exception as e:
+        logger.error(f"Failed to update product: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

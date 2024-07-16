@@ -5,7 +5,7 @@ from common_files.inventory_trans_model import InventoryTransaction, InventoryTr
 from common_files import settings
 from common_files.database import get_session
 from api.kafka_services import kafka_producer
-from api.dict_to_json import custom_json_serializer
+from common_files.json_custom_serialization import custom_json_serializer
 import logging
 
 logger = logging.getLogger(__name__)
