@@ -118,7 +118,7 @@ async def consumer_start(topic: str, group_id: str):
 async def consume_inventory_update_messages():
     """Asynchronously consume inventory from Kafka topic and store them in the database."""
     consumer = await consumer_start(
-        settings.KAFKA_INVENTORY_TOPIC, settings.KAFKA_INVENTORY_CONSUMER_GROUP_ID)
+        settings.KAFKA_PRODUCT_BAL_TOPIC, settings.KAFKA_PRODUCT_BAL_CONSUMER_GROUP_ID)
     try:
         async for msg in consumer:
             if msg.value:

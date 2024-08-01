@@ -66,3 +66,8 @@ class InventoryTransResponse(SQLModel):
     source_destination: str | None
     remarks: str | None
     user_id: int | None
+
+
+class InventoryTransDelete(SQLModel):
+    id: int
+    transaction_type: str

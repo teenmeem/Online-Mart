@@ -1,9 +1,10 @@
+import logging
+import asyncio
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from common_files.database import create_db_and_tables
-from api.kafka_services import consume_insert_update_messages, consume_delete_messages
-import asyncio
-import logging
+from api.kafka_services import\
+    consume_insert_update_messages, consume_delete_messages, consume_inventory_update_messages
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -35,6 +36,8 @@ async def lifespan(app: FastAPI):
 
         consumer_task_delete = asyncio.create_task(consume_delete_messages())
 
+        consume_task_inventory_update = asyncio.create_task(
+            consume_inventory_update_messages())
         yield
 
     except Exception as e:
@@ -45,8 +48,10 @@ async def lifespan(app: FastAPI):
         logger.info('Shutting down Kafka consumer tasks...')
         consumer_task_insert_update.cancel()
         consumer_task_delete.cancel()
+        consume_task_inventory_update.cancel()
 
-        await asyncio.gather(consumer_task_insert_update, consumer_task_delete, return_exceptions=True)
+        await asyncio.gather(consumer_task_insert_update, consumer_task_delete, consume_task_inventory_update,
+                             return_exceptions=True)
         logger.info('Kafka consumer tasks stopped.')
 
 # Initialize FastAPI app

@@ -63,10 +63,10 @@ services:
   
   product_consumer_svc:
     build:
-      context: ./product_consumer
+      context: ./Product_Services/product_consumer
       dockerfile: Dockerfile.dev
     volumes:
-      - ./product_consumer:/app  # Sync local development directory with the container
+      - ./Product_Services/product_consumer:/app  # Sync local development directory with the container
     depends_on:
         - product_producer_svc
         # - product_database_svc
@@ -101,7 +101,7 @@ services:
     depends_on:
         - broker
     ports:
-      - "8003:8000"  # Expose container port 8000 to host port 8000
+      - "8004:8000"  # Expose container port 8000 to host port 8000
     profiles: ["inventory"]
   
   inventory_consumer_svc:
@@ -114,8 +114,51 @@ services:
         - inventory_producer_svc
         # - inventory_database_svc
     ports:
-      - "8004:8000"  # Expose container port 8000 to host port 8000
+      - "8005:8000"  # Expose container port 8000 to host port 8000
     profiles: ["inventory"]
+
+  order_database_svc:
+    image: postgres:latest  # Use the official PostgreSQL image
+    restart: always
+    container_name: Order_DB_Container
+    environment:
+      POSTGRES_USER_FILE: /run/secrets/ord_db_user
+      POSTGRES_PASSWORD_FILE: /run/secrets/ord_db_password
+      POSTGRES_DB_FILE: /run/secrets/ord_database
+    secrets:
+      - ord_db_user
+      - ord_db_password
+      - ord_database
+    ports:
+      - '5436:5432'
+    volumes:
+      - order_db:/var/lib/postgresql/data
+    profiles: ["order--"]
+
+  order_producer_svc:
+    build:
+      context: ./Order_Services/order_producer
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./Order_Services/order_producer:/app  # Sync local development directory with the container
+    depends_on:
+        - broker
+    ports:
+      - "8006:8000"  # Expose container port 8000 to host port 8000
+    profiles: ["order"]
+  
+  order_consumer_svc:
+    build:
+      context: ./Order_Services/order_consumer
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./Order_Services/order_consumer:/app  # Sync local development directory with the container
+    depends_on:
+        - order_producer_svc
+        # - order_database_svc
+    ports:
+      - "8007:8000"  # Expose container port 8000 to host port 8000
+    profiles: ["order"]
 
   broker:
     image: apache/kafka:3.7.0
@@ -173,12 +216,21 @@ secrets:
   inv_database:
     file: inv_database.txt
 
+  ord_db_user:
+    file: ord_db_user.txt
+  ord_db_password:
+    file: ord_db_password.txt
+  ord_database:
+    file: ord_database.txt
+
 volumes:
   users_db:
     driver: local
   products_db:
     driver: local
   inventory_db:
+    driver: local
+  order_db:
     driver: local
 
 networks:

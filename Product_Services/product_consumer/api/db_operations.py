@@ -109,17 +109,21 @@ async def update_product_bal_in_db(id: int, deserialized_data: dict):
             quantity = deserialized_data.get("quantity")
             unit_price = deserialized_data.get("unit_price")
 
+            logger.info(f"Received update request for transaction type: {
+                        transaction_type}, quantity: {quantity}")
+
             if transaction_type and quantity is not None:
                 if transaction_type == 'IN':
                     item.stock += quantity
+                    if unit_price is not None:
+                        item.price = unit_price
+                        
                 elif transaction_type == 'OUT':
                     item.stock -= quantity
                 else:
                     raise ValueError(f"Unknown transaction_type: {
                                      transaction_type}")
 
-            if unit_price is not None:
-                item.price = unit_price
 
             session.commit()
             logger.info(f"Product with ID '{
