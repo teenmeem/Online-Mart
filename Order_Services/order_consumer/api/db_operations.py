@@ -5,72 +5,58 @@ from common_files.order_trans_model import Order, OrderCreate, OrderItem
 
 import logging
 
-# Define the logger
 logger = logging.getLogger(__name__)
+
+# session.flush()  # Ensures that order_instance.id is available
 
 
 async def insert_into_db(order_obj: OrderCreate) -> dict:
     """
-    Insert an order and its items into the database.
+    Inserts a new order into the database, including the order items and calculating the grand total.
 
     Args:
-        order_obj (OrderCreate): The order object containing order details and items.
+        order_obj (OrderCreate): The order object to be inserted into the database.
 
     Returns:
-        dict: A dictionary indicating the success of the operation.
+        dict: A dictionary containing the success status and the ID of the inserted order.
+
+    Raises:
+        HTTPException: If there is an error inserting the order into the database.
     """
-
-    # Validate and convert order_obj into a SQLModel object
-    order_create: OrderCreate = OrderCreate.model_validate(order_obj)
-
-    # Convert order_create into a dictionary excluding 'order_items'
-    order_dict: dict = order_create.model_dump(exclude={'order_items'})
-
-    # Create an Order instance from the dictionary
-    order_table: Order = Order(**order_dict)
-
     try:
+        order_create: OrderCreate = OrderCreate.model_validate(order_obj)
+
+        order_dict: dict = order_create.model_dump(exclude={'order_items'})
+
         with Session(engine) as session:
-            # Add the order to the session and commit
+            grand_total: int = 0
+            order_items_list = []
+
+            for item in order_create.order_items:
+                item_total = item.unit_price * item.quantity
+                grand_total += round(item_total)
+
+                # Create OrderItem instance
+                order_item = OrderItem(
+                    **item.model_dump(), total_price=item_total)
+                order_items_list.append(order_item)
+
+            # Create Order instance and add the order items
+            order_table = Order(
+                **order_dict, total_amount=grand_total, order_items=order_items_list)
+
             session.add(order_table)
             session.commit()
             session.refresh(order_table)
 
-            logger.info(f"Order '{order_table}' inserted into the database")
+            logger.info(f"Order items for Order ID {
+                        order_table.id} inserted into the database")
 
-            # Initialize grand total
-            grand_total: int = 0
-            # List to store order item instances
-            order_items: list[OrderItem] = []
+            return {"success": True, "order_id": order_table.id}
 
-            # Process each order item
-            for item in order_create.order_items:
-                # Convert item to dictionary
-                item_dict: dict = item.model_dump()
-                # Add order ID and calculate total price
-                item_dict['order_id'] = order_table.id
-                item_dict['total_price'] = item.unit_price * item.quantity
-                # Create an OrderItem instance from the dictionary
-                order_item_table: OrderItem = OrderItem(**item_dict)
-                # Add to grand total
-                grand_total += item_dict['total_price']
-                # Append to the list of order items
-                order_items.append(order_item_table)
-
-            # Update the order's total amount
-            order_table.total_amount = grand_total
-            # Add all order items to the session and commit
-            session.add_all(order_items)
-            session.commit()
-            session.refresh(order_table)
-
-            logger.info(f"Order items '{
-                        order_items}' inserted into the database")
-
-            return {"ok": True}
     except Exception as e:
-        logger.error(f"Failed to create order: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to insert order into database: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 async def update_into_db_nused(id: int, transaction):

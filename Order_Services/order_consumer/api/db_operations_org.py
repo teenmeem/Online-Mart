@@ -1,10 +1,13 @@
-from typing import List
 from sqlmodel import Session
+from fastapi import HTTPException
+from common_files.database import engine
+from common_files.order_trans_model import Order, OrderCreate, OrderItem
+
 import logging
 
-# Assuming OrderCreate and OrderItem are defined elsewhere in your code
 # Define the logger
 logger = logging.getLogger(__name__)
+
 
 async def insert_into_db(order_obj: OrderCreate) -> dict:
     """
@@ -16,7 +19,7 @@ async def insert_into_db(order_obj: OrderCreate) -> dict:
     Returns:
         dict: A dictionary indicating the success of the operation.
     """
-    
+
     # Validate and convert order_obj into a SQLModel object
     order_create: OrderCreate = OrderCreate.model_validate(order_obj)
 
@@ -25,7 +28,7 @@ async def insert_into_db(order_obj: OrderCreate) -> dict:
 
     # Create an Order instance from the dictionary
     order_table: Order = Order(**order_dict)
-    
+
     try:
         with Session(engine) as session:
             # Add the order to the session and commit
@@ -38,7 +41,7 @@ async def insert_into_db(order_obj: OrderCreate) -> dict:
             # Initialize grand total
             grand_total: int = 0
             # List to store order item instances
-            order_items: List[OrderItem] = []
+            order_items: list[OrderItem] = []
 
             # Process each order item
             for item in order_create.order_items:
@@ -61,9 +64,49 @@ async def insert_into_db(order_obj: OrderCreate) -> dict:
             session.commit()
             session.refresh(order_table)
 
-            logger.info(f"Order items '{order_items}' inserted into the database")
-            
+            logger.info(f"Order items '{
+                        order_items}' inserted into the database")
+
             return {"ok": True}
     except Exception as e:
         logger.error(f"Failed to create order: {e}")
-        return {"ok": False}
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+async def update_into_db_nused(id: int, transaction):
+    # : InventoryTransUpdate):
+    try:
+        with Session(engine) as session:
+            item: Order = session.get(Order, id)
+            if not item:
+                raise HTTPException(
+                    status_code=404, detail="Transaction not found")
+
+            for key, value in transaction.items():  # transaction received dict object just ignore red line
+                # set new values according to key
+                setattr(item, key, value)
+            session.commit()
+
+            logger.info(f"Transaction with ID '{
+                        item.id}' updated from the database")
+            return {"ok": True}
+    except Exception as e:
+        logger.error(f"Failed to update transaction: {e}")
+
+
+async def delete_from_db(order_id: int):
+    try:
+        with Session(engine) as session:
+            orders: Order = session.get(Order, order_id)
+            if not orders:
+                raise HTTPException(
+                    status_code=404, detail="Transaction not found")
+
+            session.delete(orders)
+            session.commit()
+
+            logger.info(f"Transaction with ID '{
+                        orders.id}' deleted from the database")
+            return {"ok": True}
+    except Exception as e:
+        logger.error(f"Failed to delete transaction: {e}")

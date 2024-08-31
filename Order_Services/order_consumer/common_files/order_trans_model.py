@@ -45,7 +45,7 @@ example_input_order = {
         {
             "product_id": 2,
             "quantity": 5,
-            "unit_price": 100000
+            "unit_price": 100000,
         }
     ]
 }
@@ -57,7 +57,6 @@ class OrderItemCreate(SQLModel):
     product_id: int
     quantity: int
     unit_price: float
-
 
 class OrderCreate(SQLModel):
     customer_id: int
