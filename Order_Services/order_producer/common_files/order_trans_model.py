@@ -7,7 +7,6 @@ class Order(SQLModel, table=True):
     customer_id: int   # Reference to User Service
     order_date: datetime = Field(default_factory=datetime.now)
     status: str = Field(max_length=50)
-    # = Field(        sa_column_kwargs={"type_": "DECIMAL(10, 2)"})
     total_amount: int | None
     shipping_address: str
     billing_address: str
@@ -24,10 +23,8 @@ class OrderItem(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     order_id: int = Field(foreign_key="order.id")
     product_id: int  # Reference to Product Service
-    quantity: int
-    # = Field(        sa_column_kwargs={"type_": "DECIMAL(10, 2)"})
+    quantity: float
     unit_price: float
-    # = Field(        sa_column_kwargs={"type_": "DECIMAL(10, 2)"})
     total_price: float
 
     order: "Order" = Relationship(back_populates="order_items")
@@ -55,8 +52,9 @@ example_input_order = {
 
 class OrderItemCreate(SQLModel):
     product_id: int
-    quantity: int
+    quantity: float
     unit_price: float
+
 
 class OrderCreate(SQLModel):
     customer_id: int
